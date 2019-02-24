@@ -1,34 +1,47 @@
+import numpy as np
+from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 
-time_step=0.1
-alpha=1.1
-beta=0.4
-sigma=0.1
-gamma=0.4
-ini_x=10
-ini_y=10
-
-x=ini_x
-y=ini_y
-x_list=[]
-y_list=[]
-
-for i in range(1000):
+# function that returns dz/dt
+def model(z,t):
+    alpha=1.1  #Prey growth rate
+    beta=0.4 #Prey death rate
+    sigma=0.1 #Predator growth rate
+    gamma=0.5 #Predator death rate
+    x = z[0]
+    y = z[1]
     rate_x=alpha*x-beta*x*y
     rate_y=sigma*x*y-gamma*y
-    x_list.append(x)
-    y_list.append(y)
-    x_new=x+rate_x*time_step
-    y_new=y+rate_y*time_step
-    if x_new<0:
-        x_new=0
-    if y_new<0:
-        y_new=0        
-    x=x_new
-    y=y_new
-    
-plt.plot(x_list,label='prey')
-plt.plot(y_list, label='predator')
-plt.ylabel('Number of population')
-plt.xlabel('Time')
-plt.legend()
+    total_rate = [rate_x,rate_y]
+    return total_rate
+
+# initial condition
+z0 = [10,10]
+
+# number of timesteps
+n = 401
+
+t = np.linspace(0,40,n)
+
+# store solution
+x = np.empty_like(t)
+y = np.empty_like(t)
+# record initial conditions
+x[0] = z0[0]
+y[0] = z0[1]
+
+# solve ODE
+for i in range(1,n):
+    length = [t[i-1],t[i]]
+    z = odeint(model,z0,length,args=())
+    x[i] = z[1][0]
+    y[i] = z[1][1]
+    z0 = z[1] 
+
+# plot results
+plt.plot(t,x,'b-',label='x(t)')
+plt.plot(t,y,'r--',label='y(t)')
+plt.ylabel('values')
+plt.xlabel('time')
+plt.legend(loc='best')
+plt.show()
