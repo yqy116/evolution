@@ -8,7 +8,6 @@ class animal:
                   id_no, \
                   pos, \
                   hunger, \
-                  speed, \
                   max_hunger,\
                   reproduction_threshold, \
                   reproduction_transfer, \
@@ -20,6 +19,9 @@ class animal:
                   reproduction_rate_gene, \
                   life_span_gene, \
                   consume_rate_gene, \
+                  no_offspring_gene, \
+                  fighting_gene, \
+                  reproduction_threshold_gene, \
                   ):
         #
         self.__pos = pos
@@ -39,12 +41,11 @@ class animal:
         self.__consume_rate_gene = consume_rate_gene
         self.__consume_rate = consume_rate
 
-        # self.__no_offspring_gene = no_offspirng_gene
+        self.__no_offspring_gene = no_offspring_gene
 
-        # traits
-        self.__speed = speed
-        self.__speed_value = self.__speed
+        self.__fighting_gene = fighting_gene
 
+        self.__reproduction_threshold_gene = reproduction_threshold_gene
 
 
 
@@ -55,14 +56,35 @@ class animal:
         # self.__life_span_value = int( max( 1, life_span * myMath.gaussian( life_span_gene, 0, 3 ) ) )
 
         #Linear mapping
-        self.__hunger_rate_value = max( 0.1, myMath.linear( hunger_rate_gene, hunger_rate, 0.5 ) )
+        if self.animal_type() == 0:
+            self.__hunger_rate_value = max( 0, myMath.linear( hunger_rate_gene, .05, hunger_rate ) )
 
-        self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, life_span, 10 ) ) )
+            self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, 1, life_span ) ) )
 
-        self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, reproduction_rate, 6 ) )
+            self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, .5, reproduction_rate ) )
 
-        self.__consume_rate_value = max( 0.1, myMath.linear( consume_rate_gene, consume_rate, 3 ) )
+            self.__consume_rate_value = max( 0.1, myMath.linear( consume_rate_gene, consume_rate, 3 ) )
 
+            self.__no_offspring_value = max( 1, int( (self.__no_offspring_gene ) ) )
+
+            self.__fighting_value = 1. - 1./ fighting_gene**.5
+
+            self.__reproduction_threshold_value = myMath.linear( reproduction_threshold_gene, 1., reproduction_threshold )
+
+        if self.animal_type() == 1:
+            self.__hunger_rate_value = max( 0.1, myMath.linear( hunger_rate_gene, 0., hunger_rate ) )
+
+            self.__life_span_value = int( max( 1, myMath.linear( life_span_gene, 0, life_span ) ) )
+
+            self.__reproduction_rate_value = max( 1, myMath.linear( reproduction_rate_gene, 0., reproduction_rate ) )
+
+            self.__consume_rate_value = max( 0.1, myMath.linear( consume_rate_gene, 0, consume_rate ) )
+
+            self.__no_offspring_value = 1
+
+            self.__fighting_value = 0
+
+            self.__reproduction_threshold_value = 60
 
         #
         self.__current_movement = 0
@@ -96,33 +118,11 @@ class animal:
     def id( self ):
         return self.__id
 
-    def speed( self ):
-        return self.__speed
-
-    def set_speed( self, value ):
-        self.__speed = value
-
-    def speed_value( self ):
-        return self.__speed_value
-
-    def current_movement( self ):
-        return self.__current_movement
-
-    def set_current_movement( self, value ):
-        self.__current_movement = value
-
-    def action_token( self ):
-        token = self.__speed - self.__current_movement
-        return token
-
     def hunger( self ):
         return self.__hunger
 
     def max_hunger( self ):
         return self.__max_hunger
-
-    def reproduction_threshold( self ):
-        return self.__reproduction_threshold
 
     def reproduction_transfer( self ):
         return self.__reproduction_transfer
@@ -136,6 +136,15 @@ class animal:
     def reproduction_rate_value( self ):
         return self.__reproduction_rate_value
 
+    def reproduction_threshold( self ):
+        return self.__reproduction_threshold
+
+    def reproduction_threshold_gene( self ):
+        return self.__reproduction_rate_gene
+
+    def reproduction_threshold_value( self ):
+        return self.__reproduction_threshold_value
+
     def hunger_rate( self ):
         return self.__hunger_rate
 
@@ -144,6 +153,12 @@ class animal:
 
     def hunger_rate_value( self ):
         return self.__hunger_rate_value
+
+    def no_offspring_gene( self ):
+        return self.__no_offspring_gene
+
+    def no_offspring_value( self ):
+        return self.__no_offspring_value
 
     def life_span( self ):
         return self.__life_span
@@ -162,6 +177,12 @@ class animal:
 
     def consume_rate_value( self ):
         return self.__consume_rate_value
+
+    def fighting_gene( self ):
+        return self.__fighting_gene
+
+    def fighting_value( self ):
+        return self.__fighting_value
 
     def full( self ):
         return self.__max_hunger - self.__hunger <= 1.e-16
@@ -222,7 +243,7 @@ class animal:
 
     def reproduce( self ):
         self.__hunger -= self.__reproduction_transfer
-        self.__offspring += 1
+        self.__offspring += self.__no_offspring_value
         return 0
 
     def reproduction_check( self ):
@@ -250,7 +271,6 @@ class prey(animal):
         return 'prey' + str( self.id() ) + ' ' + str( self.pos() ) + ' ' + \
                'age ' + str( self.age() ) + '/' + str( self.life_span_value() ) + ' ' + \
                'hunger: ' + "{0:.2f}".format( self.hunger() ) + '/' + "{0:.2f}".format( self.max_hunger() ) + '\n' + \
-               'speed: ' + str( self.speed() ) + '\n' + \
                'rep_threshold: ' + str( self.reproduction_threshold() ) + '\n' + \
                'rep_transfer: ' + str( self.reproduction_transfer() ) + '\n' + \
                'rep_rate: ' + str( self.reproduction_rate() ) + '\n' + \
@@ -273,7 +293,6 @@ class predator(animal):
         return 'prey' + str( self.id() ) + ' ' + str( self.pos() ) + ' ' + \
                'age ' + str( self.age() ) + '/' + str( self.life_span_value() ) + ' ' + \
                'hunger: ' + "{0:.2f}".format( self.hunger() ) + '/' + "{0:.2f}".format( self.max_hunger() ) + '\n' + \
-               'speed: ' + str( self.speed() ) + '\n' + \
                'rep_threshold: ' + str( self.reproduction_threshold() ) + '\n' + \
                'rep_transfer: ' + str( self.reproduction_transfer() ) + '\n' + \
                'rep_rate: ' + str( self.reproduction_rate() ) + '\n' + \

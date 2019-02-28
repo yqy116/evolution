@@ -4,6 +4,7 @@ import random
 import sys
 import pickle
 import copy
+from scipy import optimize
 
 import ecosystem
 
@@ -17,67 +18,66 @@ load_file = 'save_file'
 # The name of the file that you want to save
 save_file = 'save_file'
 
-frame_number = 601
+frame_number = 401
 enable_draw = False
 auto_stop_count = 0
 
 # dimension of space
-dimension = 2
+dimension = 10
 # order of space
-order = 30
+order = 20
 # initial prey number
 initial_prey_no = 0
 # initial predator number
 initial_predator_no = 0
 
 
+def exponential( x, k ):
+    return 1000*np.exp(k*x)
+
 # condition for bugs to reproduce
-prey_reproduction_threshold=12
+prey_reproduction_threshold=20
 # hunger transfered to offspring
-prey_reproduction_transfer=6
+prey_reproduction_transfer=.6
 # every n cycle the bug will reproduce
-prey_reproduction_rate=.3
+prey_reproduction_rate=5
 # hunger decresing rate
-prey_hunger_rate=0.1
+prey_hunger_rate=.1
 # prey life span
-prey_life_span=5
-# prey speed
-prey_speed=1
+prey_life_span=20
 # prey max hunger
-prey_max_hunger=20
+prey_max_hunger=30
 # initial hunger value of prey
 initial_prey_hunger=10
 # max amount of food can be consumed
 prey_consume_rate=.2
 
 # condition for bugs to reproduce
-predator_reproduction_threshold=40
+predator_reproduction_threshold=80
 # hunger transfered to offspring
-predator_reproduction_transfer=8
+predator_reproduction_transfer=.6
 # every n cycle the predator will reproduce
-predator_reproduction_rate=.8
+predator_reproduction_rate=30
 # hunger decresing rate
-predator_hunger_rate=1.5
+predator_hunger_rate=1.
 # predator life span
-predator_life_span=800
-# predator speed
-predator_speed=1
+predator_life_span=120
 # predator max hunger
-predator_max_hunger=60
+predator_max_hunger=120
 # initial hunger value of predator
 initial_predator_hunger = predator_max_hunger
 # max amount of food can be consumed
-predator_consume_rate=1
+predator_consume_rate=40
 
 
 # food generation rate
 food_generation_rate = 1
 # no. of squares that receive food
-food_generation_no = int( 100 * (order / 15.)**2 )
+food_generation_no = int( 200 * (order / 15.)**2 )
 # amount of food generation per space
 food_generation_amount = 1
 # maximum food amounyt per square
-food_capacity = 20
+food_capacity = 30
 
 # initial food distribution
 food_distribution = []
@@ -109,7 +109,6 @@ if ( not enable_loading ):
                                               reproduction_transfer=[ prey_reproduction_transfer, predator_reproduction_transfer ], \
                                               reproduction_rate=[ prey_reproduction_rate, predator_reproduction_rate ], \
                                               life_span=np.array([ prey_life_span, predator_life_span ]), \
-                                              animal_speed=np.array([ prey_speed, predator_speed ]), \
                                               animal_max_hunger=np.array([ prey_max_hunger, predator_max_hunger ]), \
                                               animal_consume_rate=np.array([ prey_consume_rate, predator_consume_rate ]), \
                                               initial_food_distribution=food_distribution, \
@@ -136,15 +135,22 @@ else:
 # Initialising figures
 ################################################################################
 fig = plt.figure()
-fig.suptitle( 'Gene/traits distribution, iteration = ' + str( ecosystem_instance.frame() ) )
-ax1 = fig.add_subplot(421)
-ax2 = fig.add_subplot(422)
-ax3 = fig.add_subplot(423)
-ax4 = fig.add_subplot(424)
-ax5 = fig.add_subplot(425)
-ax6 = fig.add_subplot(426)
-ax7 = fig.add_subplot(427)
-ax8 = fig.add_subplot(428)
+fig.suptitle( 'Geno\Phenotype distribution, iteration = ' + str( ecosystem_instance.frame() ) )
+ax1 = fig.add_subplot(221)
+ax2 = fig.add_subplot(222)
+ax3 = fig.add_subplot(223)
+ax4 = fig.add_subplot(224)
+
+fig2 = plt.figure()
+fig.suptitle( 'Geno\Phenotype distribution, iteration = ' + str( ecosystem_instance.frame() ) )
+ax5 = fig2.add_subplot(221)
+ax6 = fig2.add_subplot(222)
+ax7 = fig2.add_subplot(223)
+ax8 = fig2.add_subplot(224)
+
+fig3 =plt.figure()
+
+
 
 def draw_gene():
     '''
@@ -155,50 +161,65 @@ def draw_gene():
     ax1.set_title( 'prey hunger rate' )
     # ax1.set_xlabel( 'hunger rate value' )
     ax1.set_ylabel( 'frequency' )
-    ax1.set_xlim([0, 2])
+    # ax1.set_xlim([0, 2])
 
     ax2.hist(  ecosystem_instance.prey_hunger_rate_genevalue(), bins = 30 )
     ax2.set_title( 'prey hunger rate gene' )
     # ax2.set_xlabel( 'hunger rate genevalue' )
     ax2.set_ylabel( 'frequency' )
-    ax2.set_xlim([-4, 11])
+    # ax2.set_xlim([-4, 11])
 
-    ax3.hist(  ecosystem_instance.prey_life_span(), bins = 30 )
-    ax3.set_title( 'prey life_span' )
+    ax3.hist(  ecosystem_instance.prey_fighting(), bins = 30 )
+    ax3.set_title( 'prey fighting power' )
     # ax3.set_xlabel( 'life_span value' )
     ax3.set_ylabel( 'frequency' )
-    ax3.set_xlim([0, 70])
+    # ax3.set_xlim([0, 70])
 
-    ax4.hist(  ecosystem_instance.prey_life_span_genevalue(), bins = 30 )
-    ax4.set_title( 'prey life_span gene' )
+    ax4.hist(  ecosystem_instance.prey_fighting_genevalue(), bins = 30 )
+    ax4.set_title( 'prey fighting gene' )
     # ax4.set_xlabel( 'life_span gene value' )
     ax4.set_ylabel( 'frequency' )
-    ax4.set_xlim([-4, 11])
+    # ax4.set_xlim([-4, 11])
+
+    fig.savefig( './fig/' + '1-' +str(frame) + '.png' )
 
     ax5.hist(  ecosystem_instance.prey_reproduction_rate(), bins = 30 )
     ax5.set_title( 'prey reproduction rate' )
     # ax5.set_xlabel( 'reproduction rate value' )
     ax5.set_ylabel( 'frequency' )
-    ax5.set_xlim([5, 14])
+    # ax5.set_xlim([5, 14])
 
     ax6.hist(  ecosystem_instance.prey_reproduction_rate_genevalue(), bins = 30 )
     ax6.set_title( 'prey reproduction rate gene' )
     # ax6.set_xlabel( 'reproduction rate gene value' )
     ax6.set_ylabel( 'frequency' )
-    ax6.set_xlim([5, 25])
+    # ax6.set_xlim([5, 25])
 
-    ax7.hist(  ecosystem_instance.prey_consume_rate(), bins = 30 )
-    ax7.set_title( 'prey consume rate' )
+    ax7.hist(  ecosystem_instance.prey_no_offspring(), bins = 30 )
+    ax7.set_title( 'no of offspring' )
     # ax6.set_xlabel( 'reproduction rate gene value' )
-    ax7.set_ylabel( 'frequency' )
-    ax7.set_xlim([3, 9])
+    ax7.set_ylabel( 'of of offspring' )
+    # ax7.set_xlim([0, 12])
 
-    ax8.hist(  ecosystem_instance.prey_consume_rate_genevalue(), bins = 30 )
-    ax8.set_title( 'prey consume rate gene' )
+    ax8.hist(  ecosystem_instance.prey_no_offspring_genevalue(), bins = 30 )
+    ax8.set_title( 'no of offspring gene' )
     # ax6.set_xlabel( 'reproduction rate gene value' )
     ax8.set_ylabel( 'frequency' )
-    ax8.set_xlim([5, 25])
+    # ax8.set_xlim([5, 25])
 
+    fig2.savefig( './fig/' + '2-' +str(frame) + '.png' )
+
+    # ax_landscape.hist()
+    ax_landscape = fig3.add_subplot(111)
+
+    H, xedges, yedges = np.histogram2d(ecosystem_instance.prey_hunger_rate_genevalue(), ecosystem_instance.prey_reproduction_rate_genevalue(), bins=30 )
+    H = H.T  # Let each row list bins with common y range.
+    cax = ax_landscape.imshow(H, interpolation='nearest', origin='low', extent=[0, 15, 10, 30], vmin = 0, vmax = 25 )
+
+    plt.colorbar( cax )
+    fig3.savefig( './fig/' + '3-' +str(frame) + '.png' )
+
+    plt.clf()
 
 ################################################################################
 # Evoluting system
@@ -223,11 +244,6 @@ for frame in range( int(frame_number) ):
             food_y = random.randint(0,order-1)
             ecosystem_instance.add_food( [food_x, food_y], food_generation_amount )
 
-        # Add food to all squares
-        # for i in range( order ):
-        #     for j in range( order ):
-        #         ecosystem_instance.add_food( [i, j], food_generation_amount )
-
     # system update
     ecosystem_instance.update()
     print( 'prey      / predator       ', "{0:.0f}".format( ecosystem_instance.animal_life_no()[0]), '/', "{0:.0f}".format( ecosystem_instance.animal_life_no()[1]) )
@@ -235,24 +251,35 @@ for frame in range( int(frame_number) ):
     print( 'total                      ', "{0:.2f}".format( ecosystem_instance.total_food() )  )
     print( 'animal    / plant          ', "{0:.2f}".format( sum(ecosystem_instance.animal_food())), '/', "{0:.2f}".format(ecosystem_instance.vege_food())  )
 
+    print( 'preybirth', ecosystem_instance.prey_birth() )
+    print( 'preydeath', ecosystem_instance.prey_natural_death()  )
+    print( 'predatorbirth', ecosystem_instance.predator_birth() )
+    print( 'predatordeath', ecosystem_instance.predator_death()  )
+
 
     # store ecosystem to a list
     if frame == ( frame_number - 1 ):
         system_list.append( copy.deepcopy(ecosystem_instance) )
 
     # if frame % (frame_number/5) == 0 and not frame ==0:
-    if ( (frame+1) % 50 == 0 ):
+    if ( (frame+1) % 10 == 0 ) or frame+1 == frame_number:
         draw_gene()
-        plt.savefig( './fig/' +str(frame) + '.png' )
 
+    if frame == 10:
+        ecosystem_instance.species_invasion( 20 )
+    #
+    # if frame == 500:
+    #     food_generation_no = int( food_generation_no* 2. )
+
+
+print( '***Saving current session***' )
 system_list.append( copy.deepcopy(ecosystem_instance) )
-print( '***Saving current section***' )
 
 # save current instance
 with open( save_file, 'wb' ) as output:
     pickle.dump( system_list, output, pickle.HIGHEST_PROTOCOL )
 
-print( '***Section saved！***' )
+print( '***Session saved！***' )
 
 
 ################################################################################
@@ -270,8 +297,10 @@ plt.ylabel( 'animal no' )
 plt.title( 'Animal population vs. time' )
 
 
-
-
+# par, err = optimize.curve_fit( exponential, ecosystem_instance.frame_array(), ecosystem_instance.predator_no_array() )
+# plt.plot( ecosystem_instance.frame_array(), exponential(ecosystem_instance.frame_array(),par[0]), label = 'Prey population' )
+#
+# print( par )
 
 
 # fig2 = plt.figure()
@@ -292,8 +321,6 @@ plt.title( 'Animal population vs. time' )
 '''
 # prey life span
 prey_life_span=300
-# prey speed
-prey_speed=1
 # prey max hunger
 prey_max_hunger=20
 # initial hunger value of prey
@@ -311,8 +338,6 @@ predator_reproduction_rate=1
 predator_hunger_rate=3
 # predator life span
 predator_life_span=800
-# predator speed
-predator_speed=1
 # predator max hunger
 predator_max_hunger=100
 # initial hunger value of predator
