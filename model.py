@@ -261,9 +261,11 @@ for frame in range( int(frame_number) ):
     if frame == ( frame_number - 1 ):
         system_list.append( copy.deepcopy(ecosystem_instance) )
 
-    # if frame % (frame_number/5) == 0 and not frame ==0:
-    if ( (frame+1) % 10 == 0 ) or frame+1 == frame_number:
-        draw_gene()
+# =============================================================================
+#     # if frame % (frame_number/5) == 0 and not frame ==0:
+#     if ( (frame+1) % 10 == 0 ) or frame+1 == frame_number:
+#         draw_gene()
+# =============================================================================
 
     if frame == 10:
         ecosystem_instance.species_invasion( 20 )
@@ -276,8 +278,10 @@ print( '***Saving current session***' )
 system_list.append( copy.deepcopy(ecosystem_instance) )
 
 # save current instance
-with open( save_file, 'wb' ) as output:
-    pickle.dump( system_list, output, pickle.HIGHEST_PROTOCOL )
+# =============================================================================
+# with open( save_file, 'wb' ) as output:
+#     pickle.dump( system_list, output, pickle.HIGHEST_PROTOCOL )
+# =============================================================================
 
 print( '***Session saved！***' )
 
